@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Complete Sutskever 30: An Interactive Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Scholarly Neutrals -->
+    <!-- Application Structure Plan: The application is structured into three key, interactive sections to guide the user from a broad overview to specific details. 1) Introduction: Sets the context. 2) Timeline Explorer: Gives a chronological perspective of AI's evolution. This is intuitive for showing the accelerating pace of innovation. 3) Thematic Deep Dive: The core section, which categorizes all 27 papers and resources by topic (e.g., Computer Vision, NLP) for focused learning. This is a far more effective information architecture than a single, flat list. A unified detail modal provides comprehensive information and shows intellectual relationships, preventing visual clutter in the main interface and providing a consistent user flow. -->
+    <!-- Visualization & Content Choices: 1) Paper List -> Goal: Organize/Inform -> Method: Thematic card grid using HTML/Tailwind -> Interaction: Filter by category, click for detail modal -> Justification: Allows users to focus on specific AI sub-fields without being overwhelmed by a single long list of 27 items. 2) Chronology -> Goal: Show Change -> Method: Interactive scatter plot timeline via Chart.js (Canvas) -> Interaction: Hover for tooltips, click for details -> Justification: Clearly visualizes the accelerating pace of innovation in deep learning. 3) Paper Relationships -> Goal: Show Connections -> Method: Display related papers directly in the detail modal, linking them by name -> Interaction: Click on a paper card to open the modal and see the connections -> Justification: For a list of 27 papers, a complex visual graph would be visually cluttered and difficult to parse. This simplified, contextual approach provides the same information in a much cleaner, more scalable way. All interactions trigger a single modal for consistency. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f7f4;
+            color: #3f3c36;
+        }
+        .nav-link {
+            position: relative;
+            transition: color 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 50%;
+            background-color: #8a7a5f;
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        .nav-link:hover::after, .nav-link.active::after {
+            width: 100%;
+        }
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e2e0dd;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .filter-btn {
+            transition: all 0.3s ease;
+        }
+        .filter-btn.active {
+            background-color: #8a7a5f;
+            color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .modal-bg {
+            background-color: rgba(0,0,0,0.5);
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-40 w-full border-b border-gray-200">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <h1 class="text-xl font-bold text-gray-800">The Sutskever 30</h1>
+                <nav class="hidden md:flex items-center space-x-6 text-sm font-medium">
+                    <a href="#intro" class="nav-link text-gray-600 hover:text-gray-900 active">Introduction</a>
+                    <a href="#timeline" class="nav-link text-gray-600 hover:text-gray-900">Timeline</a>
+                    <a href="#explorer" class="nav-link text-gray-600 hover:text-gray-900">Deep Dive</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 md:py-12">
+        <section id="intro" class="text-center mb-16 md:mb-24 scroll-mt-20">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4 text-gray-900">The Canon of Modern AI</h2>
+            <p class="max-w-3xl mx-auto text-lg text-gray-600">
+                AI pioneer Ilya Sutskever reportedly suggested that a deep understanding of these foundational works could provide 90% of the essential knowledge in modern AI. This interactive guide explores this full curated list, offering a structured journey through the foundational ideas that have shaped deep learning, from early theoretical papers to the latest breakthroughs.
+            </p>
+        </section>
+
+        <section id="timeline" class="mb-16 md:mb-24 scroll-mt-20">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900">Timeline Explorer</h2>
+                <p class="max-w-2xl mx-auto text-gray-600 mt-2">
+                    Visualize the evolution of deep learning. This timeline plots the publication year of each key paper, revealing the accelerating pace of innovation. Hover over any point for a quick summary or click to see the full details.
+                </p>
+            </div>
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200">
+                 <div class="chart-container">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="explorer" class="mb-16 md:mb-24 scroll-mt-20">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900">Thematic Deep Dive</h2>
+                <p class="max-w-2xl mx-auto text-gray-600 mt-2">
+                    Explore the papers organized by their core themes. Filter by category to focus on specific areas of interest, such as the rise of Transformers or the principles of scaling models. Click any card to learn more.
+                </p>
+            </div>
+            <div id="filter-container" class="flex flex-wrap justify-center gap-2 mb-8"></div>
+            <div id="papers-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+    </main>
+
+    <div id="modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg hidden opacity-0">
+        <div id="modal-content" class="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform scale-95 opacity-0">
+            <div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+                <h3 id="modal-title" class="text-lg font-bold"></h3>
+                <button id="modal-close" class="text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <div class="p-6">
+                <div class="text-sm text-gray-500 mb-4">
+                    <p><strong>Authors:</strong> <span id="modal-authors"></span></p>
+                    <p><strong>Year:</strong> <span id="modal-year"></span> | <strong>Category:</strong> <span id="modal-category"></span></p>
+                </div>
+                <p id="modal-summary" class="text-gray-700 mb-4"></p>
+                <div id="modal-relations" class="hidden mb-4">
+                    <p class="font-semibold mb-2 text-gray-800">Related Papers:</p>
+                    <ul id="modal-related-list" class="list-disc pl-5 text-gray-600"></ul>
+                </div>
+                <a id="modal-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-block bg-[#8a7a5f] text-white font-semibold px-4 py-2 rounded-md hover:bg-[#786a52] transition-colors">Read More &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+const papersData = [
+    { id: 'mdl', title: 'Keeping Neural Networks Simple by Minimizing the Description Length of the Weights', authors: ['G. Hinton', 'D. van Camp'], year: 1993, category: 'Theory', summary: 'An early and influential paper connecting information theory (Minimum Description Length) to neural network regularization, aiming to find simpler, more generalizable models.', link: 'https://www.cs.toronto.edu/~hinton/absps/colt93.pdf', related_papers: [] },
+    { id: 'ml_superint', title: 'Machine Super Intelligence', authors: ['S. Legg'], year: 2008, category: 'Theory', summary: 'A dissertation that explores the theoretical foundations of intelligence and the path to artificial general intelligence, laying a conceptual groundwork for future research.', link: 'http://www.vetta.org/documents/Machine_Super_Intelligence.pdf', related_papers: [] },
+    { id: 'first_law', title: 'The First Law of Complexodynamics', authors: ['S. Aaronson'], year: 2011, category: 'Theory', summary: 'A theoretical paper that explores the dynamics of complexity in closed systems, touching on a core interest of Sutskever\'s in the theoretical underpinnings of intelligence.', link: 'https://scottaaronson.blog/?p=762', related_papers: [] },
+    { id: 'alexnet', title: 'ImageNet Classification with Deep Convolutional Neural Networks (AlexNet)', authors: ['A. Krizhevsky', 'I. Sutskever', 'G. Hinton'], year: 2012, category: 'Computer Vision', summary: 'The landmark "AlexNet" paper that demonstrated the power of deep CNNs on the ImageNet dataset, effectively kickstarting the modern deep learning revolution.', link: 'https://proceedings.neurips.cc/paper/2012/file/c399862d3b9d6b76c8436e924a68c45b-Paper.pdf', related_papers: ['resnet'] },
+    { id: 'coffee_auto', title: 'Quantifying the Rise and Fall of Complexity in Closed Systems: The Coffee Automaton', authors: ['S. Aaronson', 'S. Carroll', 'L. Ouellette'], year: 2014, category: 'Theory', summary: 'Another theoretical paper by Scott Aaronson that uses a simple automaton model to explore and quantify the behavior of complexity over time.', link: 'https://arxiv.org/abs/1405.0069', related_papers: [] },
+    { id: 'bahdanau_attention', title: 'Neural Machine Translation by Jointly Learning to Align and Translate', authors: ['D. Bahdanau', 'K. Cho', 'Y. Bengio'], year: 2014, category: 'NLP/Seq2Seq', summary: 'A breakthrough in machine translation that introduced an "attention mechanism," allowing the model to focus on relevant parts of the source sentence. This was a direct precursor to the Transformer.', link: 'https://arxiv.org/abs/1409.0473', related_papers: ['transformer'] },
+    { id: 'rnn_reg', title: 'Recurrent Neural Network Regularization', authors: ['W. Zaremba', 'I. Sutskever', 'O. Vinyals'], year: 2014, category: 'RNNs', summary: 'A paper that introduced effective regularization techniques for Recurrent Neural Networks, helping to prevent overfitting and improve performance.', link: 'https://arxiv.org/abs/1409.2329', related_papers: [] },
+    { id: 'ntm', title: 'Neural Turing Machines', authors: ['A. Graves', 'G. Wayne', 'I. Danihelka'], year: 2014, category: 'Advanced Models', summary: 'Introduced a novel architecture that couples a neural network with an external memory bank, allowing it to learn simple algorithms from examples.', link: 'https://arxiv.org/abs/1410.5401', related_papers: [] },
+    { id: 'unreasonable_rnn', title: 'The Unreasonable Effectiveness of Recurrent Neural Networks', authors: ['A. Karpathy'], year: 2015, category: 'RNNs', summary: 'An influential blog post demonstrating the surprising power of Recurrent Neural Networks to learn and generate complex sequential data, from text to code.', link: 'http://karpathy.github.io/2015/05/21/rnn-effectiveness/', related_papers: [] },
+    { id: 'pointer_net', title: 'Pointer Networks', authors: ['O. Vinyals', 'M. Fortunato', 'N. Jaitly'], year: 2015, category: 'NLP/Seq2Seq', summary: 'A paper that introduced a novel architecture for problems where the output is a permutation of the input, such as sorting or finding a path.', link: 'https://arxiv.org/abs/1506.03134', related_papers: [] },
+    { id: 'understanding_lstm', title: 'Understanding LSTM Networks', authors: ['C. Olah'], year: 2015, category: 'RNNs', summary: 'A widely-read, beautifully illustrated blog post that provides an intuitive explanation of Long Short-Term Memory (LSTM) networks, a powerful type of RNN.', link: 'https://colah.github.io/posts/2015-08-Understanding-LSTMs/', related_papers: ['unreasonable_rnn'] },
+    { id: 'seq2seq_sets', title: 'Order Matters: Sequence to Sequence for Sets', authors: ['O. Vinyals', 'S. Bengio', 'M. Kudlur'], year: 2015, category: 'NLP/Seq2Seq', summary: 'A paper that explores how to apply sequence-to-sequence models to problems where the input order does not matter, such as sorting a set of items.', link: 'https://arxiv.org/abs/1511.06391', related_papers: [] },
+    { id: 'dilated_conv', title: 'Multi-Scale Context Aggregation by Dilated Convolutions', authors: ['F. Yu', 'V. Koltun'], year: 2015, category: 'Computer Vision', summary: 'Introduced dilated convolutions, which allow convolutional networks to capture a wider range of context without increasing the number of parameters.', link: 'https://arxiv.org/abs/1511.07122', related_papers: [] },
+    { id: 'deepspeech2', title: 'Deep Speech 2: End-to-End Speech Recognition in English and Mandarin', authors: ['D. Amodei et al.'], year: 2015, category: 'Advanced Models', summary: 'Showcased how deep learning could be applied to create highly effective end-to-end speech recognition systems, approaching human-level performance.', link: 'https://arxiv.org/pdf/1512.02595', related_papers: [] },
+    { id: 'resnet', title: 'Deep Residual Learning for Image Recognition (ResNet)', authors: ['K. He', 'X. Zhang', 'S. Ren', 'J. Sun'], year: 2015, category: 'Computer Vision', summary: 'Introduced Residual Networks (ResNets), which use "skip connections" to allow the training of much deeper networks than were previously possible.', link: 'https://arxiv.org/abs/1512.03385', related_papers: ['resnet_identity', 'dilated_conv'] },
+    { id: 'resnet_identity', title: 'Identity Mappings in Deep Residual Networks', authors: ['K. He', 'X. Zhang', 'S. Ren', 'J. Sun'], year: 2016, category: 'Computer Vision', summary: 'A follow-up to the original ResNet paper, this work analyzed the residual building blocks and proposed an improved unit that enables easier training and better performance for even deeper networks.', link: 'https://arxiv.org/abs/1603.05027', related_papers: [] },
+    { id: 'kolmogorov_complex', title: 'Kolmogorov Complexity and Algorithmic Randomness', authors: ['A. Shen', 'V. Uspensky', 'N. Vereshchagin'], year: 2016, category: 'Theory', summary: 'This work delves into the mathematical theory of information, providing a foundation for understanding the complexity of models and data compression.', link: 'https://www.worldscientific.com/worldscibooks/10.1142/6309', related_papers: [] },
+    { id: 'vlae', title: 'Variational Lossy Autoencoder', authors: ['X. Chen', 'D. Kingma', 'T. Salimans'], year: 2016, category: 'Advanced Models', summary: 'Proposed a method for training a generative model by adding a variational loss component to an autoencoder, improving its ability to generate novel data.', link: 'https://arxiv.org/abs/1611.05148', related_papers: [] },
+    { id: 'neural_message', title: 'Neural Message Passing for Quantum Chemistry', authors: ['J. Gilmer et al.'], year: 2017, category: 'Advanced Models', summary: 'A paper that applied neural networks to a problem in physics, demonstrating their power for scientific applications by using a graph-based approach.', link: 'https://arxiv.org/abs/1704.01212', related_papers: [] },
+    { id: 'relational_reasoning', title: 'A simple neural network module for relational reasoning', authors: ['A. Santoro et al.'], year: 2017, category: 'Advanced Models', summary: 'Proposed a simple, plug-and-play "Relation Network" module that can be added to existing architectures to solve problems that require relational reasoning.', link: 'https://arxiv.org/abs/1706.01427', related_papers: ['relational_rnn'] },
+    { id: 'transformer', title: 'Attention Is All You Need (Transformers)', authors: ['A. Vaswani et al.'], year: 2017, category: 'NLP/Seq2Seq', summary: 'The seminal paper that introduced the Transformer architecture, which relies solely on self-attention mechanisms. It has become the foundation for most state-of-the-art NLP models.', link: 'https://arxiv.org/abs/1706.03762', related_papers: [] },
+    { id: 'annotated_transformer', title: 'The Annotated Transformer', authors: ['A. Rush et al.'], year: 2018, category: 'Resources', summary: 'A highly influential blog post that provides a line-by-line, interactive explanation of the "Attention Is All You Need" paper, making it highly accessible.', link: 'http://nlp.seas.harvard.edu/2018/08/21/essays/annotated_transformer.html', related_papers: ['transformer'] },
+    { id: 'relational_rnn', title: 'Relational Recurrent Neural Networks', authors: ['A. Santoro et al.'], year: 2018, category: 'Advanced Models', summary: 'A follow-up that applied relational reasoning to recurrent neural networks, demonstrating how to incorporate these mechanisms into sequential models.', link: 'https://arxiv.org/abs/1806.01822', related_papers: [] },
+    { id: 'gpipe', title: 'GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism', authors: ['Y. Huang et al.'], year: 2018, category: 'Scaling & Optimization', summary: 'Introduced GPipe, a library for training giant neural networks by splitting them across multiple devices, allowing for the scaling of very large models.', link: 'https://arxiv.org/abs/1811.06965', related_papers: ['scaling_laws'] },
+    { id: 'scaling_laws', title: 'Scaling Laws for Neural Language Models', authors: ['J. Kaplan et al.'], year: 2020, category: 'Scaling & Optimization', summary: 'This paper empirically studied the relationship between model performance, model size, dataset size, and compute. It established predictable "scaling laws," which has guided the development of larger models like GPT-3.', link: 'https://arxiv.org/abs/2001.08361', related_papers: [] },
+    { id: 'mdl', title: 'A Tutorial Introduction to the Minimum Description Length Principle', authors: ['P. Grünwald'], year: 2004, category: 'Theory', summary: 'A comprehensive tutorial on the Minimum Description Length (MDL) principle, a foundational concept in information theory that provides a framework for understanding model complexity and generalization.', link: 'https://www.cs.helsinki.fi/u/gth/petersen/mdl_tutorial.pdf', related_papers: [] },
+    { id: 'cs231n', title: 'CS231n: Convolutional Neural Networks for Visual Recognition (Stanford course)', authors: ['F. Li', 'A. Karpathy', 'J. Johnson'], year: 2017, category: 'Resources', summary: 'A highly regarded Stanford university course, included as a resource for providing a comprehensive and practical understanding of CNNs and computer vision.', link: 'https://cs231n.github.io/', related_papers: ['alexnet', 'resnet'] },
+];
+
+const categories = ['All', ...new Set(papersData.map(p => p.category))];
+const filterContainer = document.getElementById('filter-container');
+const papersGrid = document.getElementById('papers-grid');
+const modal = document.getElementById('modal');
+const modalContent = document.getElementById('modal-content');
+const modalClose = document.getElementById('modal-close');
+let activeFilter = 'All';
+
+function renderFilters() {
+    filterContainer.innerHTML = '';
+    categories.forEach(category => {
+        const btn = document.createElement('button');
+        btn.textContent = category;
+        btn.className = `filter-btn px-4 py-2 text-sm font-semibold rounded-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 ${category === activeFilter ? 'active' : ''}`;
+        btn.dataset.category = category;
+        btn.addEventListener('click', () => {
+            activeFilter = category;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderPapers();
+        });
+        filterContainer.appendChild(btn);
+    });
+}
+
+function renderPapers() {
+    papersGrid.innerHTML = '';
+    const filteredPapers = (activeFilter === 'All')
+        ? papersData
+        : papersData.filter(p => p.category === activeFilter);
+    
+    filteredPapers.sort((a,b) => a.year - b.year).forEach(paper => {
+        const card = document.createElement('div');
+        card.className = 'card p-6 rounded-lg cursor-pointer';
+        card.dataset.id = paper.id;
+        card.innerHTML = `
+            <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-white bg-[#8a7a5f] px-2 py-1 rounded-full">${paper.category}</span>
+                <span class="text-sm font-semibold text-gray-500">${paper.year}</span>
+            </div>
+            <h3 class="font-bold text-lg mb-2 text-gray-800">${paper.title}</h3>
+            <p class="text-sm text-gray-600">${paper.authors.join(', ')}</p>
+        `;
+        card.addEventListener('click', () => showModal(paper.id));
+        papersGrid.appendChild(card);
+    });
+}
+
+function showModal(paperId) {
+    const paper = papersData.find(p => p.id === paperId);
+    if (!paper) return;
+
+    document.getElementById('modal-title').textContent = paper.title;
+    document.getElementById('modal-authors').textContent = paper.authors.join(', ');
+    document.getElementById('modal-year').textContent = paper.year;
+    document.getElementById('modal-category').textContent = paper.category;
+    document.getElementById('modal-summary').textContent = paper.summary;
+    document.getElementById('modal-link').href = paper.link;
+
+    const relatedList = document.getElementById('modal-related-list');
+    relatedList.innerHTML = '';
+    const relatedPapers = paper.related_papers.map(id => papersData.find(p => p.id === id));
+    if (relatedPapers.length > 0) {
+        document.getElementById('modal-relations').classList.remove('hidden');
+        relatedPapers.forEach(relatedPaper => {
+            const li = document.createElement('li');
+            li.textContent = `${relatedPaper.title} (${relatedPaper.year})`;
+            relatedList.appendChild(li);
+        });
+    } else {
+        document.getElementById('modal-relations').classList.add('hidden');
+    }
+
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modalContent.classList.remove('scale-95', 'opacity-0');
+    }, 10);
+}
+
+function hideModal() {
+    modalContent.classList.add('scale-95', 'opacity-0');
+    modal.classList.add('opacity-0');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+modalClose.addEventListener('click', hideModal);
+modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+        hideModal();
+    }
+});
+
+let timelineChartInstance = null;
+function initTimelineChart() {
+    const ctx = document.getElementById('timelineChart').getContext('2d');
+    const chartData = {
+        datasets: categories.slice(1).map(category => {
+            const categoryPapers = papersData.filter(p => p.category === category);
+            return {
+                label: category,
+                data: categoryPapers.map(p => ({x: p.year, y: Math.random() * 10, paper: p})),
+                backgroundColor: getCategoryColor(category),
+                pointRadius: 6,
+                pointHoverRadius: 9,
+            };
+        })
+    };
+
+    if(timelineChartInstance) {
+        timelineChartInstance.destroy();
+    }
+
+    timelineChartInstance = new Chart(ctx, {
+        type: 'scatter',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const paper = context.raw.paper;
+                            return `${paper.title} (${paper.year})`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Year'
+                    },
+                    min: Math.min(...papersData.map(p => p.year)) - 1,
+                    max: Math.max(...papersData.map(p => p.year)) + 1,
+                },
+                y: {
+                    display: false
+                }
+            },
+            onClick: (evt, elements) => {
+                if (elements.length > 0) {
+                    const paperId = chartData.datasets[elements[0].datasetIndex].data[elements[0].index].paper.id;
+                    showModal(paperId);
+                }
+            }
+        }
+    });
+}
+
+function getCategoryColor(category) {
+    const colors = {
+        'Computer Vision': 'rgba(239, 68, 68, 0.7)',
+        'RNNs': 'rgba(59, 130, 246, 0.7)',
+        'NLP/Seq2Seq': 'rgba(245, 158, 11, 0.7)',
+        'Scaling & Optimization': 'rgba(16, 185, 129, 0.7)',
+        'Theory': 'rgba(139, 92, 246, 0.7)',
+        'Advanced Models': 'rgba(99, 102, 241, 0.7)',
+        'Resources': 'rgba(107, 114, 128, 0.7)',
+    };
+    return colors[category] || 'rgba(107, 114, 128, 0.7)';
+}
+
+const navLinks = document.querySelectorAll('.nav-link');
+const sections = document.querySelectorAll('main section');
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            navLinks.forEach(link => {
+                link.classList.toggle('active', link.getAttribute('href').substring(1) === entry.target.id);
+            });
+        }
+    });
+}, { rootMargin: '-50% 0px -50% 0px' });
+sections.forEach(section => observer.observe(section));
+
+renderFilters();
+renderPapers();
+initTimelineChart();
+window.addEventListener('resize', initTimelineChart);
+
+});
+</script>
+
+</body>
+</html>
